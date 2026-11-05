@@ -1,16 +1,21 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
-import { createCanvas, loadImage, registerFont } from 'canvas'; // 💡 把 registerFont 加到這裡
+import { createCanvas, loadImage, registerFont } from 'canvas';
 import mongoose from 'mongoose';
 import { Card } from '../../database/Card.js';
-import path from 'path'; // 💡 改用 import 語法引入 path
+import path from 'path';
 
-// 註冊卡牌字型（使用 100% 免疫沙盒隔離的 ESM 爬樓梯路徑）
-import { fileURLToPath } from 'url';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// 💡 記憶體物理超渡法：直接用 Buffer 從剛才複製的文字載入字型，徹底免去讀取檔案的痛苦！
+const fontBase64 = "把您剛剛在 font_base64.txt 裡複製的那一長串文字貼在這裡面";
+const fontBuffer = Buffer.from(fontBase64, 'base64');
+registerFont(fontBuffer, { family: 'Source Han Serif TC' });
+
+// 💡 英文字型如果您也想用這招，可以重複上述步驟。或者暫時先不註冊英文字型（Canvas會自動用預設Sans字體代替，不會崩潰）
+
 
 // 💡 修正後的正確寫法（去掉了多餘的逗號）：
-registerFont(path.join(__dirname, '../../../fonts/SOURCEHANSERIFTC-BOLD.OTF'), { family: 'Source Han Serif TC' });
-registerFont(path.join(__dirname, '../../../fonts/MANTIOUSANS-REGULAR.TTF'), { family: 'Mantiousans-Regular' });
+// 💡 完全對齊您 GitHub 網頁上「半小寫、半大寫」的真實檔名：
+registerFont(path.join(__dirname, '../../../fonts/sourcehanseriftc-bold.OTF'), { family: 'Source Han Serif TC' });
+registerFont(path.join(__dirname, '../../../fonts/mantiousans-regular.TTF'), { family: 'Mantiousans-Regular' });
 
 
 export const cooldowns = new Map();       
