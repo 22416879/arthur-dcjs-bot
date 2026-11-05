@@ -1,9 +1,10 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
-import vueinit from '@/core/vue.js';
+import vueinit from './core/vue.js';           // 💡 第 2 行修正
 import dotenv from 'dotenv';
-import { useAppStore } from '@/store/app.js';
-import { loadCommands, loadEvents } from '@/core/loader.js';
-import { connectDB } from '@/database/connect.js';
+import { useAppStore } from './store/app.js';    // 💡 第 4 行修正
+import { loadCommands, loadEvents } from './core/loader.js'; // 💡 第 5 行修正
+import { connectDB } from './database/connect.js'; // 💡 第 6 行修正
+
 
 vueinit();
 dotenv.config();
