@@ -3,18 +3,13 @@ import { createCanvas, loadImage, registerFont } from 'canvas';
 import mongoose from 'mongoose';
 import { Card } from '../../database/Card.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// 💡 記憶體物理超渡法：直接用 Buffer 從剛才複製的文字載入字型，徹底免去讀取檔案的痛苦！
-const fontBase64 = "把您剛剛在 font_base64.txt 裡複製的那一長串文字貼在這裡面";
-const fontBuffer = Buffer.from(fontBase64, 'base64');
-registerFont(fontBuffer, { family: 'Source Han Serif TC' });
+// 💡 取得當前 index.js 所在的目錄絕對路徑 (相容 ESM)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// 💡 英文字型如果您也想用這招，可以重複上述步驟。或者暫時先不註冊英文字型（Canvas會自動用預設Sans字體代替，不會崩潰）
-
-
-// 💡 修正後的正確寫法（去掉了多餘的逗號）：
-// 💡 完全對齊您 GitHub 網頁上「半小寫、半大寫」的真實檔名：
-// 💡 使用徹底洗乾淨、沒有隱形編碼的全新純英文檔名
+// 💡 完美對齊您左側檔案樹純英文命名的 font1.otf 與 font2.ttf 實體檔案，絕無多餘逗號與括號
 registerFont(path.join(__dirname, '../../../fonts/font1.otf'), { family: 'Source Han Serif TC' });
 registerFont(path.join(__dirname, '../../../fonts/font2.ttf'), { family: 'Mantiousans-Regular' });
 
