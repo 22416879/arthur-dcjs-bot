@@ -7,8 +7,11 @@ USER root
 # 設定專案工作目錄
 WORKDIR /app
 
-# 💡 物理通關：注意點點之間要有空格！
-# 代表把本地目前目錄下的所有東西（包含 node_modules），複製到容器的 /app 目錄下
+# 複製設定檔並利用 yarn 安裝套件（它會自動讀取剛剛在後台設定的 npmmirror 鏡像源速度極快）
+COPY package*.json ./
+RUN yarn install
+
+# 複製專案所有代碼
 COPY . .
 
 # 處理客製化字型
