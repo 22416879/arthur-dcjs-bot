@@ -10,8 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // 💡 完美對齊您左側檔案樹純英文命名的 font1.otf 與 font2.ttf 實體檔案，絕無多餘逗號與括號
-registerFont(path.join(__dirname, '../../../fonts/font1.otf'), { family: 'Source Han Serif TC' });
-registerFont(path.join(__dirname, '../../../fonts/font2.ttf'), { family: 'Mantiousans-Regular' });
+// ⬇️ 改成與你左側檔案樹完全相同的「大小寫」與「副檔名」
+registerFont(path.join(__dirname, '../..', 'fonts', 'font1.TTF'), { family: 'Source Han Serif TC' });
+registerFont(path.join(__dirname, '../..', 'fonts', 'font2.OTF'), { family: 'MantiTousans-Regular' });
 
 
 
