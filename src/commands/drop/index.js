@@ -14,8 +14,10 @@ registerFont(fontBuffer, { family: 'Source Han Serif TC' });
 
 // 💡 修正後的正確寫法（去掉了多餘的逗號）：
 // 💡 完全對齊您 GitHub 網頁上「半小寫、半大寫」的真實檔名：
-registerFont(path.join(__dirname, '../../../fonts/sourcehanseriftc-bold.OTF'), { family: 'Source Han Serif TC' });
-registerFont(path.join(__dirname, '../../../fonts/mantiousans-regular.TTF'), { family: 'Mantiousans-Regular' });
+// 💡 使用徹底洗乾淨、沒有隱形編碼的全新純英文檔名
+registerFont(path.join(__dirname, '../../../fonts/font1.otf'), { family: 'Source Han Serif TC' });
+registerFont(path.join(__dirname, '../../../fonts/font2.ttf'), { family: 'Mantiousans-Regular' });
+
 
 
 export const cooldowns = new Map();       
