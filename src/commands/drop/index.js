@@ -4,11 +4,12 @@ import mongoose from 'mongoose';
 import { Card } from '../../database/Card.js';
 import path from 'path'; // 💡 改用 import 語法引入 path
 
-// 註冊卡牌字型
-registerFont(path.join(process.cwd(), 'fonts/SOURCEHANSERIFTC-BOLD.OTF'), { family: 'Source Han Serif TC' });
-registerFont(path.join(process.cwd(), 'fonts/MANTIOUSANS-REGULAR.TTF'), { family: 'Mantiousans-Regular' });
+// 註冊卡牌字型（使用 100% 免疫沙盒隔離的 ESM 爬樓梯路徑）
+import { fileURLToPath } from 'url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-
+registerFont(path.join(__dirname, '../../../fonts/SOURCEHANSERIFTC-BOLD.OTF'), { family: 'Source Han Serif TC' });
+registerFont(path.join(__dirname, '../../../fonts/MANTIOUSANS-REGULAR.TTF'), { family: 'Mantiousans-Regular' });
 
 export const cooldowns = new Map();       
 export const claimCooldowns = new Map();  
