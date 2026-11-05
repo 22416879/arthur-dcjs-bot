@@ -1,7 +1,13 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas, loadImage, registerFont } from 'canvas'; // 💡 把 registerFont 加到這裡
 import mongoose from 'mongoose';
 import { Card } from '../../database/Card.js';
+import path from 'path'; // 💡 改用 import 語法引入 path
+
+// 💡 將檔名改為全小寫，能完美相容 Windows 與 Railway Linux 環境
+registerFont(path.join(process.cwd(), 'fonts/sourcehanseriftc-bold.otf'), { family: 'Source Han Serif TC' });
+registerFont(path.join(process.cwd(), 'fonts/mantiousans-regular.ttf'), { family: 'Mantiousans-Regular' });
+
 
 export const cooldowns = new Map();       
 export const claimCooldowns = new Map();  
