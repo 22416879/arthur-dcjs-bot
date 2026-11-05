@@ -1,17 +1,14 @@
 # 使用內建完整圖形與字型依賴庫的專用基底
 FROM ghcr.io/puppeteer/puppeteer:20.9.0
 
-# 切換到 root 權限以便複製與處理字型
+# 切換到 root 權限
 USER root
 
 # 設定專案工作目錄
 WORKDIR /app
 
-# 💡 複製 package.json 與 yarn.lock 並改用 yarn 安裝全部套件
-COPY package*.json yarn.lock* ./
-RUN yarn install
-
-# 複製專案所有代碼
+# 💡 物理通關：注意點點之間要有空格！
+# 代表把本地目前目錄下的所有東西（包含 node_modules），複製到容器的 /app 目錄下
 COPY . .
 
 # 處理客製化字型
