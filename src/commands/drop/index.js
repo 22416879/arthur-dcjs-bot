@@ -8,8 +8,10 @@ import path from 'path'; // 💡 改用 import 語法引入 path
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// 💡 修正後的正確寫法（去掉了多餘的逗號）：
 registerFont(path.join(__dirname, '../../../fonts/SOURCEHANSERIFTC-BOLD.OTF'), { family: 'Source Han Serif TC' });
 registerFont(path.join(__dirname, '../../../fonts/MANTIOUSANS-REGULAR.TTF'), { family: 'Mantiousans-Regular' });
+
 
 export const cooldowns = new Map();       
 export const claimCooldowns = new Map();  
