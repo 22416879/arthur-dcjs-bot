@@ -1,17 +1,10 @@
 {
-  "type": "module",
-  {
   "name": "arthur-dcjs-bot",
   "version": "1.0.0",
   "type": "module",
   "imports": {
     "@/*": "./src/*"
   },
-  "scripts": {
-    "arthur": "vite-node src/main.js"
-  }
-}
-
   "scripts": {
     "arthur": "vite-node src/main.js"
   },
