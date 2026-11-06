@@ -1,9 +1,13 @@
-import {SlashCommandBuilder} from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 
-export const command = new SlashCommandBuilder()
+export const data = new SlashCommandBuilder()
     .setName('view')
     .setDescription('查看卡牌');
 
 export const action = async (interaction) => {
-    await interaction.reply('正在查看卡牌');
-}
+    // 移除 ephemeral 或設為 false，這樣所有在頻道內的人都能看到這條回應
+    await interaction.reply({ 
+        content: '🔮 正在查看卡牌庫...', 
+        ephemeral: false 
+    });
+};
