@@ -19,6 +19,17 @@ registerFont(path.join(__dirname, '../..', 'fonts', 'font2.OTF'), { family: 'Man
 export const cooldowns = new Map();       
 export const claimCooldowns = new Map();  
 
+// 🎯 核心補強 A：每次玩家抽卡生成新卡時，呼叫此函式計算一組全球唯一的 6 位數短代碼
+function generateShortCode() {
+  const chars = 'abcdefghijkmnpqrstuvwxyz23456789'; // 排除混淆字元
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+
 const RARITIES = [
   { code: 'C', colors: ['#2ecc71', '#27ae60'], borderColors: ['#a3e4d7', '#a9dfbf'], strokeColor: '#0e6251', glowColor: null, fontSize: 90, weight: 50 },   
   { code: 'R', colors: ['#00a8ff', '#00d2d3'], borderColors: ['#5cd1ff', '#64f3f4'], strokeColor: '#ffffff', glowColor: null, fontSize: 90, weight: 30 },   
@@ -239,6 +250,19 @@ const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-seri
         const rarityMap = { 'C': 1, 'R': 2, 'SR': 3, 'SSR': 4, 'SSS': 5 };
         const rarityNumber = rarityMap[targetCard.rarityCode] || 1;
 
+               // 🎯 核心修正 2：改用原生底層數據庫連線，強制繞過 Mongoose 審查，100% 揪出重複舊代碼
+        const testCollection = mongoose.connection.useDb('card_bot_db').collection('cards'); 
+        
+        let uniquePlayerCode = generateShortCode();
+        
+        // 暴力撈取：不管是誰擁有的，只要 cards 表裡有任何人包含這組 code，通通重抽！
+        let isCodeDup = await testCollection.findOne({ code: uniquePlayerCode });
+        while (isCodeDup) {
+            uniquePlayerCode = generateShortCode();
+            isCodeDup = await testCollection.findOne({ code: uniquePlayerCode });
+        }
+
+        // 3. 執行全新的卡片存檔
         const newOwnedCard = new Card({
           name: realCharacterName, 
           series: targetCard.series || "經典動漫", 
@@ -247,10 +271,12 @@ const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-seri
           cardId: `${targetCard.cloudinaryPublicId}_${targetCard.cardNumber}`, 
           rarity: rarityNumber,                                               
           quality: 4,                                  
-          ownerId: clickerId 
+          ownerId: clickerId,
+          code: uniquePlayerCode // 🔥 永久綁定這組在當下全宇宙都絕對唯一的 6 位數短碼！
         });
 
         await newOwnedCard.save();
+
 
         row = createComponentsRow(interaction.id, claimStatus, false);
         await interaction.editReply({ components: [row] });

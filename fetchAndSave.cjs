@@ -13,6 +13,16 @@ cloudinary.config({
 const mongoUri = process.env.MONGO_URI || "你的_MONGODB_ATLAS_連線字串";
 const client = new MongoClient(mongoUri);
 
+// 🎯 核心補強 A：建立 6 位數隨機短代碼產生器（排除容易混淆的 l, 1, o, 0，玩家輸入最流暢）
+function generateShortCode() {
+  const chars = 'abcdefghijkmnpqrstuvwxyz23456789'; 
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
 async function syncCloudinaryToMongo() {
   try {
     // 連線到 MongoDB
@@ -28,7 +38,7 @@ async function syncCloudinaryToMongo() {
     const cloudinaryResult = await cloudinary.search
       .expression('folder:arthur-bot AND resource_type:image')
       .with_field('context')
-      .with_field('metadata') // 💡 多抓取元資料欄位，確保萬無一失
+      .with_field('metadata') 
       .sort_by('public_id','desc')
       .max_results(500)
       .execute();
@@ -43,7 +53,6 @@ async function syncCloudinaryToMongo() {
 
     // 4. 將 Cloudinary 的資料轉換為 MongoDB 格式
     const cardDocuments = images.map(img => {
-      // 💡 終極相容取名邏輯：依次檢查所有可能存放 Display Name 的地方，如果都沒有才用原本的亂碼檔名
       const displayName = 
         img.context?.custom?.caption || 
         img.context?.caption || 
@@ -58,19 +67,42 @@ async function syncCloudinaryToMongo() {
       };
     });
 
-    // 5. 智慧比對並強制覆蓋更新 MongoDB
-    console.log("正在將最正確的 Display Name 強制覆蓋至 MongoDB...");
+    console.log("正在進行智慧比對，並全自動為 100 多張卡牌補齊 / 指派 6 位數唯一的專屬短代碼...");
     
     let insertedCount = 0;
     let updatedCount = 0;
+    let codeAssignedCount = 0;
 
+    // 5. 智慧遍歷並處理代碼
     for (const card of cardDocuments) {
+      // 💡 先去資料庫翻看這張卡以前同步過沒，身上有沒有 code 欄位
+      const existingCard = await cardsCollection.findOne({ cloudinaryPublicId: card.cloudinaryPublicId });
+      
+      let finalCode = existingCard?.code;
+
+      // 🎯 核心補強 B：如果這張卡是新卡，或者舊卡身上沒有 code，立刻在記憶體幫它算一組唯一的隨機序號！
+      if (!finalCode) {
+        let uniqueCode = generateShortCode();
+        
+        // 防撞安全機制：確保算出來的這組 6 位數在目前的資料庫沒有被別張卡牌撞過
+        let isDup = await cardsCollection.findOne({ code: uniqueCode });
+        while (isDup) {
+          uniqueCode = generateShortCode();
+          isDup = await cardsCollection.findOne({ code: uniqueCode });
+        }
+        
+        finalCode = uniqueCode;
+        codeAssignedCount++;
+      }
+
+      // 執行智慧更新與覆蓋
       const result = await cardsCollection.updateOne(
         { cloudinaryPublicId: card.cloudinaryPublicId }, 
         { 
           $set: { 
-            characterName: card.characterName, // 🔥 強制複寫成我們抓到真正的好看名字
-            imageUrl: card.imageUrl            
+            characterName: card.characterName, 
+            imageUrl: card.imageUrl,
+            code: finalCode // 🔥 將這組永久唯一的 6 位數短代碼寫入資料庫！
           },
           $setOnInsert: {
             syncedAt: card.syncedAt            
@@ -86,7 +118,9 @@ async function syncCloudinaryToMongo() {
       }
     }
 
-    console.log(`同步完成！本次順利補入 ${insertedCount} 張新卡，並成功強制覆蓋修正了 ${updatedCount} 張卡片的名字！`);
+    console.log(`\n🎉 同步暨序號指派大功告成！`);
+    console.log(`✨ 本次全自動成功幫 ${codeAssignedCount} 張卡片生成並綁定了全新的 6 位數獨立短代碼！`);
+    console.log(`📦 資料庫維護統計：新增 ${insertedCount} 張卡，覆蓋更新名稱 ${updatedCount} 張卡。`);
 
   } catch (error) {
     console.error("同步過程中發生錯誤:", error);

@@ -30,12 +30,16 @@ client.once(Events.ClientReady, (readyClient) => {
 });
 
 // ======= 💡 玩家快捷鍵監聽系統 (ad / acd / ac / av / at / ab) =======
-// ======= 💡 玩家快捷鍵監聽系統 (ad / acd / ac / av / at / ab) =======
-// ======= 💡 玩家快捷鍵監聽系統 (ad / acd / ac / av / at / ab) =======
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    const commandName = message.content.toLowerCase().trim();
+    // 1. 將輸入內容用「空格」切開成陣列。例如 "av #00000" -> ["av", "#00000"]
+    const args = message.content.trim().split(/ +/);
+    if (args.length === 0) return;
+
+    // 2. 精準拿取陣列第一個字當指令（轉小寫），第二個字當參數卡號
+    const commandName = args[0].toLowerCase(); // 這樣不管後面打什麼，這裡永遠都只會拿到 "av"！
+    const paramId = args.length > 1 ? args[1] : null; // 這裡會精準拿到 "#00000"
 
     const shortcutMap = {
         'ad': 'drop',
@@ -54,15 +58,14 @@ client.on('messageCreate', async (message) => {
 
         // 建立 100% 完美相容的偽裝 Interaction 物件
         const mockInteraction = {
-            // 🛠️ 修正：不要帶有 _mock 後綴，直接讓 ID 保持純字串，防止按鈕按下去切頁失效
-            id: String(message.id), 
+            id: paramId, // 🎯 關鍵：完美將分離出來的 "#00000" 參數帶入指令中！
+            messageId: String(message.id), 
             user: message.author,
             member: message.member,
             guild: message.guild,
             client: message.client,
             deferred: false,
             replied: false,
-            // 模擬延遲回覆
             deferReply: async (options) => {
                 mockInteraction.deferred = true;
                 mockInteraction.mainMsg = await message.channel.send('⏳ 正在載入中，請稍候...');
@@ -73,25 +76,15 @@ client.on('messageCreate', async (message) => {
                 const finalContent = typeof contentObj === 'string' ? contentObj : (contentObj.content || '❌ 發生攔截');
                 return message.reply(finalContent);
             },
-            // 🛠️ 終極修正：將 embeds 還有 payloads 完美渲染出來，徹底解鎖「正在載入中」卡住的問題！
             editReply: async (contentObj) => {
                 mockInteraction.replied = true;
                 if (mockInteraction.mainMsg) {
                     const updatePayload = {};
-                    
-                    // 1. 處理文字內容
                     if (contentObj.content !== undefined) updatePayload.content = contentObj.content;
-                    else updatePayload.content = null; // 清除「正在載入中」的文字
-
-                    // 2. 處理 Embeds 面板（ac 和 acd 最核心的精美看版）
+                    else updatePayload.content = null;
                     if (contentObj.embeds) updatePayload.embeds = contentObj.embeds;
-
-                    // 3. 處理按鈕組件（上一頁、下一頁）
                     if (contentObj.components) updatePayload.components = contentObj.components;
-
-                    // 4. 處理大圖檔案（drop 掉卡專用）
                     if (contentObj.files) updatePayload.files = contentObj.files;
-
                     return mockInteraction.mainMsg.edit(updatePayload);
                 } else {
                     return message.channel.send(contentObj);
@@ -111,11 +104,9 @@ client.on('messageCreate', async (message) => {
         };
 
         try {
-            // 執行指令邏輯！
             await actionFunction(mockInteraction);
         } catch (error) {
             console.error(`執行快捷鍵 ${commandName} 失敗:`, error);
-            // 發生錯誤時自動把卡住的訊息刪除
             if (mockInteraction.mainMsg) await mockInteraction.mainMsg.delete().catch(() => {});
             message.reply(`❌ 執行快捷指令時發生未知錯誤。`);
         }

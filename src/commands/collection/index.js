@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { Card } = require('../../database/Card.js');
+const mongoose = require('mongoose');
 
 const rarityMap = { 1: 'C', 2: 'R', 3: 'SR', 4: 'SSR', 5: 'SSS' };
 
@@ -14,7 +15,7 @@ module.exports = {
         try {
             const userId = interaction.user.id;
 
-            // 🎯 終極相容查詢：抓取該玩家所有的卡片
+            // 1. 撈取玩家個人背包的所有卡片 (test 資料表)
             const userCards = await Card.find({
                 $or: [
                     { ownerId: userId },
@@ -22,11 +23,16 @@ module.exports = {
                     { ownerId: String(userId) },
                     { ownerid: String(userId) }
                 ]
-            }).sort({ createdAt: -1 });
+            }).sort({ createdAt: -1 }).lean();
 
             if (!userCards || userCards.length === 0) {
                 return await interaction.editReply('你目前還沒有收藏任何卡片喔！快去掉卡吧！');
             }
+
+            // 🎯 核心補強：直接連線到圖鑑模板表 (cards Collection)
+            const cardsCollection = mongoose.connection.useDb('card_bot_db').collection('cards');
+            // 一口氣把全圖鑑撈出來，方便在記憶體中進行 0 毫秒極速跨表智慧對碰
+            const globalCards = await cardsCollection.find({}).toArray();
 
             const ITEMS_PER_PAGE = 10; 
             const totalPages = Math.ceil(userCards.length / ITEMS_PER_PAGE);
@@ -34,7 +40,7 @@ module.exports = {
 
             const generatePageMessage = (page) => {
                 const embed = new EmbedBuilder()
-                    .setTitle(`📂 ${interaction.member.displayName} 的卡片收藏`) // 🛠️ 強制正名：修復亂碼標題，直接顯示玩家的名稱！
+                    .setTitle(`📂 ${interaction.member.displayName} 的卡片收藏`) 
                     .setColor('#f1c40f')
                     .setFooter({ text: `第 ${page} / ${totalPages} 頁 ｜ 共 ${userCards.length} 張卡片` })
                     .setTimestamp();
@@ -45,19 +51,39 @@ module.exports = {
                 const cardList = pageCards.map((uc, index) => {
                     const globalIndex = startIndex + index + 1;
                     
-                    // 精準分離出最尾端的純數字卡號
+                    // 分離出最尾端的純數字卡號 (相容底線和斜線)
                     let finalNum = '00000';
-                    if (uc.cardId && uc.cardId.includes('_')) {
-                        const arr = uc.cardId.split('_');
+                    let currentPublicId = '';
+                    const rawId = uc.cardid || uc.cardId || '';
+                    
+                    if (String(rawId).includes('_')) {
+                        const arr = String(rawId).split('_');
                         finalNum = arr[arr.length - 1]; 
+                        currentPublicId = arr[0]; // 取得對照用的 cloudinaryPublicId
+                    } else if (String(rawId).includes('/')) {
+                        const arr = String(rawId).split('/');
+                        finalNum = arr[arr.length - 1];
+                        currentPublicId = arr.slice(0, -1).join('/');
+                    } else {
+                        finalNum = String(rawId).replace('#', '');
                     }
+                    const numMatch = String(finalNum).match(/\d+/);
+                    const formattedNum = numMatch ? String(numMatch).padStart(5, '0') : '00000';
                     
-                    const rarityString = rarityMap[uc.rarity] || uc.rarity;
-                    
-                    // 🛠️ 重新加回作品顯示：如果資料庫有作品就顯示，沒有就提示待更新
+                    const rarityString = rarityMap[uc.rarity] || uc.rarity || 'C';
                     const seriesText = uc.series && uc.series !== "未知作品" ? uc.series : "經典動漫";
                     
-                    return `**${globalIndex}.** \`#${String(finalNum).padStart(5, '0')}\` **${uc.name}** [${rarityString}] - *${seriesText}*`;
+                    // 🎯 智慧跨表對碰：拿著背包卡的 cloudinaryPublicId，去圖鑑表尋找對應的卡片物件
+                    const matchedGlobalCard = globalCards.find(gc => 
+                        gc.cloudinaryPublicId === currentPublicId || 
+                        gc.imageUrl === uc.imageUrl || 
+                        gc.imageLink === uc.imageUrl
+                    );
+
+                    // 🎯 成功抓到圖鑑表裡面的 code，若背包有存 code 則優先用背包的
+                    const shortCode = String(uc.code || matchedGlobalCard?.code || '######').toLowerCase();
+                    
+                    return `**${globalIndex}.** \`[${shortCode}]\` \`#${formattedNum}\` **${uc.name || uc.characterName || '未知角色'}** [${rarityString}] - *${seriesText}*`;
                 }).join('\n');
 
                 embed.setDescription(cardList);
@@ -69,7 +95,7 @@ module.exports = {
                         .setStyle(ButtonStyle.Primary)
                         .setDisabled(page === 1),
                     new ButtonBuilder()
-                        .setCustomId(`next_${interaction.id}`) // 🛠️ 修正：綁定正確的 interaction.id
+                        .setCustomId(`next_${interaction.id}`) 
                         .setLabel('下一頁 ▶️')
                         .setStyle(ButtonStyle.Primary)
                         .setDisabled(page === totalPages)
