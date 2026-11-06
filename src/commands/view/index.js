@@ -188,7 +188,7 @@ module.exports = {
             // C. 繪製卡牌純編號文字 (100% 同步您 drop 後半段第 13-33 行的顏色與字型分流區間)
             ctx.save();
             const numberText = `NO . ${displayId}`;
-            ctx.font = '24px "Source Han Serif TW", serif'; 
+            ctx.font = '24px "MantouSans-Regular", serif'; 
             ctx.textAlign = 'left';
 
             if (currentNum < 10 || currentNum === 87123) {
