@@ -7,7 +7,7 @@ const path = require('path');
 // 🎯 1. 字型載入路徑修正（100% 複製與您 /drop 相同的相對解析）
 try {
     registerFont(path.join(__dirname, '../..', 'fonts', 'font1.TTF'), { family: 'Source Han Serif TC' });
-    registerFont(path.join(__dirname, '../..', 'fonts', 'font2.OTF'), { family: 'MantiTousans-Regular' });
+    registerFont(path.join(__dirname, '../..', 'fonts', 'font2.OTF'), { family: 'MantouSans-Regular' });
     console.log("⚡ [View] 實體卡片專用字型已成功載入！");
 } catch (e) {
     console.error('❌ View 字型載入失敗：', e);
@@ -159,6 +159,7 @@ module.exports = {
             const borderRadius = 16;
             const topPadding = 56;
             const imgHeight = 459; 
+            const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-serif';
 
             // 初始外層透明/暗底色
             ctx.clearRect(0, 0, 380, 600);
@@ -182,13 +183,14 @@ module.exports = {
             // B. 繪製底部卡號黑襯底條 (100% 同步您 drop 後半段第 7 行)
             ctx.save();
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.fillRect(startX + 25, startY + cardHeight - 17, 330, 17); 
+            // ctx.fillRect(startX + 25, startY + cardHeight - 17, 330, 17);
+
             ctx.restore();
 
             // C. 繪製卡牌純編號文字 (100% 同步您 drop 後半段第 13-33 行的顏色與字型分流區間)
             ctx.save();
             const numberText = `NO . ${displayId}`;
-            ctx.font = '24px "MantouSans-Regular", serif'; 
+            ctx.font = `24px ${NUMBER_FONT_STYLE}`; ctx.textAlign = 'left'; 
             ctx.textAlign = 'left';
 
             if (currentNum < 10 || currentNum === 87123) {
