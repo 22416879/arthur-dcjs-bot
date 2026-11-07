@@ -148,7 +148,7 @@ const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-seri
       }
       ctx.restore(); 
 
-      ctx.font = "24px ''MyLevelFont', sans-serif"; ctx.textAlign = 'left'; 
+      ctx.font = "24px ''Mantousans Regular', sans-serif"; ctx.textAlign = 'left'; 
       const numberText = `NO . ${String(card.cardNumber).padStart(5, '0')}`;
       const currentNum = card.cardNumber;
 
