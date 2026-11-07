@@ -90,11 +90,15 @@ client.on('messageCreate', async (message) => {
             id: paramId, // 🎯 關鍵：完美將分離出來的 "#00000" 參數帶入指令中！
             messageId: String(message.id), 
             user: message.author,
+            author: message.author,         // 👈 補上這行，確保相容訊息格式的 .author
+            mentions: message.mentions,     // 🎯 關鍵：直接把原始訊息的標記系統傳過去！
             member: message.member,
             guild: message.guild,
             client: message.client,
+             channel: message.channel, 
             deferred: false,
             replied: false,
+            targetUser: message.mentions.users.first() || null, // 👈 補上這行
             deferReply: async (options) => {
                 mockInteraction.deferred = true;
                 mockInteraction.mainMsg = await message.channel.send('⏳ 正在載入中，請稍候...');
