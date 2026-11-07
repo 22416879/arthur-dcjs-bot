@@ -1,17 +1,13 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { createCanvas, loadImage, registerFont } = require('canvas');
+const { createCanvas, loadImage, } = require('canvas');
 const { Card } = require('../../database/Card.js');
 const mongoose = require('mongoose');
 const path = require('path');
 
-// 🎯 1. 字型載入路徑修正（100% 複製與您 /drop 相同的相對解析）
-try {
-    registerFont(path.join(__dirname, '../..', 'fonts', 'font1.TTF'), { family: 'Source Han Serif TC' });
-    registerFont(path.join(__dirname, '../..', 'fonts', 'font2.OTF'), { family: 'MantouSans-Regular' });
-    console.log("⚡ [View] 實體卡片專用字型已成功載入！");
-} catch (e) {
-    console.error('❌ View 字型載入失敗：', e);
-}
+const fs = require('fs');
+
+const FONT_STYLE = '"Source Han Serif TW", serif'; 
+
 
 // 💡 100% 複製您 /drop 的稀有度視覺設定表
 const RARITIES = [
@@ -159,7 +155,7 @@ module.exports = {
             const borderRadius = 16;
             const topPadding = 56;
             const imgHeight = 459; 
-            const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-serif';
+            const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans", "饅頭黑體", sans-serif';
 
             // 初始外層透明/暗底色
             ctx.clearRect(0, 0, 380, 600);
@@ -190,7 +186,7 @@ module.exports = {
             // C. 繪製卡牌純編號文字 (100% 同步您 drop 後半段第 13-33 行的顏色與字型分流區間)
             ctx.save();
             const numberText = `NO . ${displayId}`;
-            ctx.font = `24px ${NUMBER_FONT_STYLE}`; ctx.textAlign = 'left'; 
+            ctx.font = "24px 'MyLevelFont', sans-serif"; ctx.textAlign = 'left'; 
             ctx.textAlign = 'left';
 
             if (currentNum < 10 || currentNum === 87123) {
@@ -235,7 +231,7 @@ module.exports = {
 
             // E. 頂端繪製角色名字條與名字 (100% 複製您 drop 後半段第 43-47 行)
             ctx.save();
-            ctx.font = 'bold 28px "Source Han Serif TW", serif'; 
+            ctx.font = "28px 'MyLevelFont', serif"; 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.strokeStyle = rarity.strokeColor;
@@ -259,7 +255,26 @@ module.exports = {
             textGradient.addColorStop(1, rarity.colors[1]);
             
             // 🎯 100% 使用與您 drop 一字不差的大字字型家族名稱與大小
-            ctx.font = `italic bold ${rarity.fontSize}px "Source Han Serif TW"`; 
+           // 💡 請將第 256 行替換為這行（注意字型大小與名稱的引號）：
+// 💡 請將第 256 行替換為這行：
+// 💡 請將第 256 行替換為這行（不用加 italic bold，因為字體本身就是粗斜體）：
+
+// 1. 🔍 先在終端機印出來看它到底是物件還是陣列
+console.log("[Debug Rarity]", rarity, "型態:", typeof rarity, "是否為陣列:", Array.isArray(rarity));
+
+// 2. 🛡️ 安全防禦機制：如果是陣列，自動抓取第一個元素（避免 undefined）
+const activeRarity = Array.isArray(rarity) ? rarity[0] : rarity;
+
+// 3. 🎯 確保拿到正確的 fontSize，若拿不到則強制給予預設值 40
+const finalFontSize = (activeRarity && activeRarity.fontSize) ? activeRarity.fontSize : 40;
+
+// 4. ✍️ 完美套用（這裡使用上一部幫您簡化好的全英文全域字型名稱 'Level'）
+//  正確套用方式：直接指定給 ctx.font
+// 💡 請將 view/index.js 的第 271 行修改為：
+ctx.font = `italic bold ${finalFontSize}px ${FONT_STYLE}`;
+
+
+
             ctx.textAlign = 'right';
             ctx.strokeStyle = rarity.strokeColor;
             ctx.lineWidth = 2.5;

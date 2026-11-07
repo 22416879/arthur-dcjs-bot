@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
-import { createCanvas, loadImage, registerFont } from 'canvas';
+import { createCanvas, loadImage, } from 'canvas';
 import mongoose from 'mongoose';
 import { Card } from '../../database/Card.js';
 import path from 'path';
@@ -11,10 +11,8 @@ const __dirname = path.dirname(__filename);
 
 // 💡 完美對齊您左側檔案樹純英文命名的 font1.otf 與 font2.ttf 實體檔案，絕無多餘逗號與括號
 // ⬇️ 改成與你左側檔案樹完全相同的「大小寫」與「副檔名」
-registerFont(path.join(__dirname, '../..', 'fonts', 'font1.TTF'), { family: 'Source Han Serif TC' });
-registerFont(path.join(__dirname, '../..', 'fonts', 'font2.OTF'), { family: 'MantiTousans-Regular' });
 
-
+// 修正後的字型註冊代碼
 
 export const cooldowns = new Map();       
 export const claimCooldowns = new Map();  
@@ -150,7 +148,7 @@ const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-seri
       }
       ctx.restore(); 
 
-      ctx.font = `24px ${NUMBER_FONT_STYLE}`; ctx.textAlign = 'left'; 
+      ctx.font = "24px ''MyLevelFont', sans-serif"; ctx.textAlign = 'left'; 
       const numberText = `NO . ${String(card.cardNumber).padStart(5, '0')}`;
       const currentNum = card.cardNumber;
 
@@ -193,7 +191,7 @@ const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-seri
       ctx.restore();
 
       ctx.save();
-      ctx.font = `bold 28px ${FONT_STYLE}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
+      ctx.font = "28px 'MantouSans-Regular', serif"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; 
       const displayName = card.characterName || card.name || "未知角色";
       ctx.strokeStyle = card.rarityStroke; ctx.lineWidth = 1.5; ctx.strokeText(displayName.substring(0, 16), startX + cardWidth / 2, startY + 28);
       ctx.fillStyle = '#ffffff'; ctx.fillText(displayName.substring(0, 16), startX + cardWidth / 2, startY + 28); 

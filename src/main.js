@@ -6,6 +6,35 @@ import { loadCommands, loadEvents } from './core/loader.js'; // 💡 第 5 行�
 import { connectDB } from './database/connect.js'; // 💡 第 6 行修正
 
 
+// 在 src/main.js 的最頂層加入這段：
+//  正確的 ESM 寫法
+import { registerFont } from 'canvas';
+import path from 'path';
+import fs from 'fs';
+
+
+// 💡 請將 main.js 第 16、17 行修正為這兩行（補上 'src'）：
+const f1 = path.join(process.cwd(), 'src', 'fonts', 'Mantiousans-regular.ttf');
+const f2 = path.join(process.cwd(), 'src', 'fonts', 'font2.OTF');
+
+
+if (fs.existsSync(f1)) {
+    registerFont(f1, { family: 'Mantousans Regular' });
+    console.log("[System] 全域字型 1 註冊成功");
+} else {
+    console.log(`[Error] 找不到字型 1 檔案，路徑為: ${f1}`);
+}
+
+// 💡 請將 main.js 中原本註冊 f2 的那段改成這樣：
+// 💡 在 src/main.js 中，把名稱改成完全乾淨的 'MyLevelFont'
+if (fs.existsSync(f2)) {
+    registerFont(f2, { family: 'MyLevelFont' }); 
+    console.log("[System] 全域字型 2 (MyLevelFont) 註冊成功");
+} else {
+    console.log(`[Error] 找不到字型 2 檔案，路徑為: ${f2}`);
+}
+
+
 vueinit();
 dotenv.config();
 
