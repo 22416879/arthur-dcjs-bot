@@ -260,7 +260,7 @@ module.exports = {
 // 💡 請將第 256 行替換為這行（不用加 italic bold，因為字體本身就是粗斜體）：
 
 // 1. 🔍 先在終端機印出來看它到底是物件還是陣列
-console.log("[Debug Rarity]", rarity, "型態:", typeof rarity, "是否為陣列:", Array.isArray(rarity));
+//console.log("[Debug Rarity]", rarity, "型態:", typeof rarity, "是否為陣列:", Array.isArray(rarity));
 
 // 2. 🛡️ 安全防禦機制：如果是陣列，自動抓取第一個元素（避免 undefined）
 const activeRarity = Array.isArray(rarity) ? rarity[0] : rarity;
