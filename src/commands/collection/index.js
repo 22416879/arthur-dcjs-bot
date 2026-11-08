@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 const { Card } = require('../../database/Card.js');
 const mongoose = require('mongoose');
 
-const rarityMap = { 1: 'C', 2: 'R', 3: 'SR', 4: 'SSR', 5: 'SSS' };
+const rarityMap = { 1: 'C', 2: 'R', 3: 'SR', 4: 'SSR', 5: 'SSS',6:'UR' };
 
 module.exports = {
     command: new SlashCommandBuilder()

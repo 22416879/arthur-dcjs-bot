@@ -1,24 +1,24 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
-const { createCanvas, loadImage, } = require('canvas');
+const { createCanvas, loadImage } = require('canvas');
 const { Card } = require('../../database/Card.js');
 const mongoose = require('mongoose');
 const path = require('path');
-
 const fs = require('fs');
 
 const FONT_STYLE = '"Source Han Serif TW", serif'; 
 
-
-// 💡 100% 複製您 /drop 的稀有度視覺設定表
+// 💡 補強：新增 UR 的設定，讓 /view 的 Canvas 圖層參數完全相容 6 號字樣
 const RARITIES = [
   { code: 'C', colors: ['#2ecc71', '#27ae60'], borderColors: ['#a3e4d7', '#a9dfbf'], strokeColor: '#0e6251', glowColor: null, fontSize: 90 },   
   { code: 'R', colors: ['#00a8ff', '#00d2d3'], borderColors: ['#5cd1ff', '#64f3f4'], strokeColor: '#ffffff', glowColor: null, fontSize: 90 },   
   { code: 'SR', colors: ['#8e44ad', '#9b59b6'], borderColors: ['#d28eff', '#dfa8ff'], strokeColor: '#4b0082', glowColor: null, fontSize: 90 },   
   { code: 'SSR', colors: ['#ff9f43', '#ee5253'], borderColors: ['#ffca85', '#ff9293'], strokeColor: '#ffea79', glowColor: '#ff9f43', fontSize: 90 },  
-  { code: 'SSS', colors: ['#f1c40f', '#f39c12'], borderColors: ['#ffe675', '#ffd254'], strokeColor: '#ff7f50', glowColor: '#f1c40f', fontSize: 90 }   
+  { code: 'SSS', colors: ['#f1c40f', '#f39c12'], borderColors: ['#ffe675', '#ffd254'], strokeColor: '#ff7f50', glowColor: '#f1c40f', fontSize: 90 },
+  { code: 'UR', colors: ['#ff003c', '#ff4766'], borderColors: ['#ff6b8b', '#ff8a75'], strokeColor: '#6e0017', glowColor: '#ff003c', fontSize: 90 } // 🔥 補上 UR 特效參數
 ];
 
-const rarityMap = { 1: 'C', 2: 'R', 3: 'SR', 4: 'SSR', 5: 'SSS' };
+// 💡 補強：對照表加入 6 號 UR，徹底防禦混亂的卡面代碼
+const rarityMap = { 1: 'C', 2: 'R', 3: 'SR', 4: 'SSR', 5: 'SSS', 6: 'UR', 'UR': 'UR' };
 
 module.exports = {
     command: new SlashCommandBuilder()
@@ -64,19 +64,25 @@ module.exports = {
             if (cardIdInput) {
                 const searchKey = cardIdInput.replace('#', '').trim().toLowerCase();
 
-                // 🎯 2. 連動全圖鑑表進行代碼智慧反查！
-                const cardsCollection = mongoose.connection.useDb('card_bot_db').collection('cards');
-                const matchedGlobalCard = await cardsCollection.findOne({ code: searchKey });
+                // 🎯 核心補強 1：改用底層原生穿透對接，100% 免疫快取干擾
+                const testDb = mongoose.connection.db;
+                const cardsCollection = testDb.collection('cards');
+                let matchedGlobalCard = await cardsCollection.findOne({ code: searchKey });
+
+                // 🎯 核心補強 2：智慧雙重加查！如果一般池找不到短代碼，自動加查酒館盲盒池 ur_cards！
+                if (!matchedGlobalCard) {
+                    const urCollection = testDb.collection('ur_cards');
+                    matchedGlobalCard = await urCollection.findOne({ code: searchKey });
+                }
 
                 if (matchedGlobalCard) {
-                    // 如果用短代碼在圖鑑裡找到了這張卡，我們拿著它的 cloudinaryPublicId 或圖片連結回玩家背包尋找！
                     targetCard = userCards.find(uc => {
                         const rawId = uc.cardid || uc.cardId || '';
                         return rawId.includes(matchedGlobalCard.cloudinaryPublicId) || uc.imageUrl === matchedGlobalCard.imageUrl;
                     });
                 }
 
-                // 🎯 3. 如果短代碼沒對中，改走原本的 5-6 位數純卡號查詢
+                // 如果短代碼沒對中，改走原本的 5-6 位數純卡號查詢
                 if (!targetCard) {
                     let pureNumber = searchKey.padStart(5, '0');
                     targetCard = userCards.find(uc => {
@@ -92,7 +98,6 @@ module.exports = {
                             finalNum = String(rawId).replace('#', '');
                         }
                         const numMatch = String(finalNum).match(/\d+/);
-                        // 支援包含 100000 號在內的全區間精準對齊
                         const formattedNum = numMatch ? (String(numMatch) === '100000' ? '100000' : String(numMatch).padStart(5, '0')) : '00000';
                         return formattedNum === pureNumber;
                     });
@@ -103,18 +108,18 @@ module.exports = {
                 }
             } else {
                 // 預設拿最新的一張完整有效卡片
-                targetCard = userCards.find(c => c.imagelink || c.imageLink || c.imageUrl) || userCards; 
+                targetCard = userCards.find(c => c.imagelink || c.imageLink || c.imageUrl) || userCards[0]; 
             }
-            // 3. 🎯 100% 還原您 /drop 的變數結構與真實欄位名稱
+
             const displayName = targetCard.name || targetCard.characterName || "未知角色";
             const rawImage = targetCard.imagelink || targetCard.imageLink || targetCard.imageUrl;
             
-            // 智慧稀有度轉碼
+            // 智慧稀有度轉碼 (透過修復後的對照表正確捕捉 6 號)
             let rarityCode = String(targetCard.rarity || '1').trim();
             if (rarityMap[rarityCode]) {
                 rarityCode = rarityMap[rarityCode]; 
             }
-            const rarity = RARITIES.find(r => r.code === rarityCode) || RARITIES;
+            const rarity = RARITIES.find(r => r.code === rarityCode) || RARITIES[0];
 
             // 提取 5-6 位數純卡號
             let finalNum = '00000';
@@ -136,7 +141,6 @@ module.exports = {
                 return await interaction.reply(`⚠️ 卡牌 **${displayName}** 的原圖網址不存在或已損毀。`);
             }
 
-            // 觸發加載狀態提示
             const isMock = interaction.followUp && !interaction.applicationId;
             if (isMock) {
                 await interaction.reply('⏳ 正在從畫布調用您的實體卡片樣式...');
@@ -144,11 +148,10 @@ module.exports = {
                 await interaction.deferReply();
             }
 
-            // 🎯 4. 單張卡片專屬畫布渲染引擎 (總高度 600 滿版不裁切)
+            // 核心 Canvas 初始化
             const canvas = createCanvas(380, 600); 
             const ctx = canvas.getContext('2d');
-
-            const startX = 0;
+                       const startX = 0;
             const startY = 20; 
             const cardWidth = 380;
             const cardHeight = 560;
@@ -156,6 +159,9 @@ module.exports = {
             const topPadding = 56;
             const imgHeight = 459; 
             const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans", "饅頭黑體", sans-serif';
+
+            // 💡 核心修正：將字串與流水號的宣告提早挪到最上方，徹底根除 numberText is not defined 報錯！
+            const numberText = `NO . ${displayId}`;
 
             // 初始外層透明/暗底色
             ctx.clearRect(0, 0, 380, 600);
@@ -178,15 +184,15 @@ module.exports = {
 
             // B. 繪製底部卡號黑襯底條 (100% 同步您 drop 後半段第 7 行)
             ctx.save();
+            ctx.font = `24px ${NUMBER_FONT_STYLE}`; 
+            ctx.textAlign = 'left';
             ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            // ctx.fillRect(startX + 25, startY + cardHeight - 17, 330, 17);
-
+            ctx.fillText(numberText, startX + 24, startY + cardHeight - 18);
             ctx.restore();
 
             // C. 繪製卡牌純編號文字 (100% 同步您 drop 後半段第 13-33 行的顏色與字型分流區間)
             ctx.save();
-            const numberText = `NO . ${displayId}`;
-            ctx.font = "24px 'Mantousans Regular', sans-serif"; ctx.textAlign = 'left'; 
+            ctx.font = `24px ${NUMBER_FONT_STYLE}`; 
             ctx.textAlign = 'left';
 
             if (currentNum < 10 || currentNum === 87123) {
@@ -215,7 +221,10 @@ module.exports = {
 
             // D. 繪製稀度漸層粗邊框 (100% 複製您 drop 的 175-183 行)
             ctx.save();
-            if (rarity.glowColor) {
+            if (rarityCode === 'UR') {
+                ctx.shadowColor = '#ff003c';
+                ctx.shadowBlur = 22;
+            } else if (rarity.glowColor) {
                 ctx.shadowColor = rarity.glowColor;
                 ctx.shadowBlur = 22;
             }
@@ -234,7 +243,9 @@ module.exports = {
             ctx.font = "28px 'MyLevelFont', serif"; 
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.strokeStyle = rarity.strokeColor;
+            
+            // 💡 智慧防禦：如果是酒館 UR 卡，底框採用專屬暗紅色，其餘等級套用資料庫原始設定
+            ctx.strokeStyle = (rarityCode === 'UR') ? '#6e0017' : (rarity.strokeColor || '#ffffff');
             ctx.lineWidth = 1.5;
             ctx.strokeText(displayName.substring(0, 16), startX + cardWidth / 2, startY + 28);
             ctx.fillStyle = '#ffffff';
@@ -243,7 +254,10 @@ module.exports = {
 
             // F. 右下角繪製漸層花體稀有度大字 (100% 複製您 drop 後半段第 50-59 行，字型完美同步)
             ctx.save();
-            if (rarity.glowColor) {
+            if (rarityCode === 'UR') {
+                ctx.shadowColor = '#ff003c';
+                ctx.shadowBlur = 15;
+            } else if (rarity.glowColor) {
                 ctx.shadowColor = rarity.glowColor;
                 ctx.shadowBlur = 15;
             } else {
@@ -254,29 +268,12 @@ module.exports = {
             textGradient.addColorStop(0, rarity.colors[0]);
             textGradient.addColorStop(1, rarity.colors[1]);
             
-            // 🎯 100% 使用與您 drop 一字不差的大字字型家族名稱與大小
-           // 💡 請將第 256 行替換為這行（注意字型大小與名稱的引號）：
-// 💡 請將第 256 行替換為這行：
-// 💡 請將第 256 行替換為這行（不用加 italic bold，因為字體本身就是粗斜體）：
-
-// 1. 🔍 先在終端機印出來看它到底是物件還是陣列
-//console.log("[Debug Rarity]", rarity, "型態:", typeof rarity, "是否為陣列:", Array.isArray(rarity));
-
-// 2. 🛡️ 安全防禦機制：如果是陣列，自動抓取第一個元素（避免 undefined）
-const activeRarity = Array.isArray(rarity) ? rarity[0] : rarity;
-
-// 3. 🎯 確保拿到正確的 fontSize，若拿不到則強制給予預設值 40
-const finalFontSize = (activeRarity && activeRarity.fontSize) ? activeRarity.fontSize : 40;
-
-// 4. ✍️ 完美套用（這裡使用上一部幫您簡化好的全英文全域字型名稱 'Level'）
-//  正確套用方式：直接指定給 ctx.font
-// 💡 請將 view/index.js 的第 271 行修改為：
-ctx.font = `italic bold ${finalFontSize}px ${FONT_STYLE}`;
-
-
+            const activeRarity = Array.isArray(rarity) ? rarity[0] : rarity;
+            const finalFontSize = (activeRarity && activeRarity.fontSize) ? activeRarity.fontSize : 90;
+            ctx.font = `italic bold ${finalFontSize}px ${FONT_STYLE}`;
 
             ctx.textAlign = 'right';
-            ctx.strokeStyle = rarity.strokeColor;
+            ctx.strokeStyle = (rarityCode === 'UR') ? '#d4af37' : (rarity.strokeColor || '#ffffff');
             ctx.lineWidth = 2.5;
             
             ctx.strokeText(rarity.code, startX + cardWidth - 35, startY + cardHeight - 25);
@@ -290,7 +287,7 @@ ctx.font = `italic bold ${finalFontSize}px ${FONT_STYLE}`;
 
             const cardEmbed = new EmbedBuilder()
                 .setImage('attachment://view_card.png')
-                .setColor('#2b2d31');
+                .setColor(rarityCode === 'UR' ? '#ff003c' : '#2b2d31');
 
             if (isMock) {
                 return await interaction.followUp({ embeds: [cardEmbed], files: [attachment] });
@@ -301,9 +298,11 @@ ctx.font = `italic bold ${finalFontSize}px ${FONT_STYLE}`;
         } catch (error) {
             console.error('❌ View 渲染 Canvas 實體卡失敗：', error);
             const errMsg = `❌ 執行時發生錯誤：${error.message}`;
-            return interaction.replied || interaction.deferred
-                ? await interaction.followUp(errMsg)
-                : await interaction.reply(errMsg);
+            if (interaction.replied || interaction.deferred) {
+                return await interaction.followUp(errMsg);
+            } else {
+                return await interaction.reply(errMsg);
+            }
         }
     }
 };

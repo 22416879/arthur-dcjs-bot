@@ -102,8 +102,19 @@ export const action = async (interaction) => {
   await interaction.deferReply(); 
 
   try {
-    const cardsCollection = mongoose.connection.useDb('card_bot_db').collection('cards');
-    const baseCards = await cardsCollection.aggregate([{ $sample: { size: 3 } }]).toArray();
+    // 🎯 穿透至原生底層驅動，物理隔離全域快取，100% 精準指向 cards 卡池
+const currentDb = mongoose.connection.client.db('card_bot_db');
+const cardsCollection = currentDb.collection('cards');
+ const baseCards = await cardsCollection.aggregate([
+      { 
+        $match: { 
+          ownerId: { $exists: false },
+          ownerid: { $exists: false }
+        } 
+      },
+      { $sample: { size: 3 } }
+    ]).toArray();
+
 
     if (!baseCards || baseCards.length < 3) {
       return interaction.editReply("❌ 資料庫中的卡片數量不足 3 張.");
@@ -249,7 +260,9 @@ const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-seri
         const rarityNumber = rarityMap[targetCard.rarityCode] || 1;
 
                // 🎯 核心修正 2：改用原生底層數據庫連線，強制繞過 Mongoose 審查，100% 揪出重複舊代碼
-        const testCollection = mongoose.connection.useDb('card_bot_db').collection('cards'); 
+                // 🎯 順手修改第 37 行：改成更乾淨的 db.collection 寫法，100% 防止全域連線交叉感染
+        const testCollection = mongoose.connection.db.collection('cards');
+
         
         let uniquePlayerCode = generateShortCode();
         
