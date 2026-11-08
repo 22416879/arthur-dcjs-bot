@@ -230,7 +230,7 @@ const NUMBER_FONT_STYLE = '"MantouSans-Regular", "MantouSans_Regular", sans-seri
     collector.on('collect', async btnInteraction => {
       if (!btnInteraction.isButton()) return;
       const clickerId = btnInteraction.user.id;
-      const CLAIM_COOLDOWN_TIME = 1 * 60 * 1000; 
+      const CLAIM_COOLDOWN_TIME = 15 * 60 * 1000; 
 
       if (btnCooldowns.has(clickerId)) {
         const expire = btnCooldowns.get(clickerId) + CLAIM_COOLDOWN_TIME;

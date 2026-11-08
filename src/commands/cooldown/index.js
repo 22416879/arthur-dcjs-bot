@@ -12,7 +12,7 @@ module.exports = {
             const userId = interaction.user.id;
             const now = Date.now();
 
-            const DROP_COOLDOWN_TOTAL = 1 * 60 * 1000;      
+            const DROP_COOLDOWN_TOTAL = 15 * 60 * 1000;      
             const CLAIM_COOLDOWN_TOTAL = 1 * 60 * 1000;    
 
             let dropCooldownText = "✅ **準備就緒** ｜ 隨時可以使用 `/drop`！";
